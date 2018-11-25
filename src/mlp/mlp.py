@@ -16,7 +16,7 @@ class MLP(object):
                 weights=List with all synaptic weights;
     """
     
-    def __init__(self, alpha, numIn=1, numHid=1, numOut=1, funcs=[], weights=None):
+    def __init__(self, alpha, num_in=1, num_hid=1, num_out=1, funcs=(), weights=None):
         self.alpha = alpha
         self.inputs = []
         self.hidden = []
@@ -24,10 +24,10 @@ class MLP(object):
         self.errors = []
         self.mse = -1.0
         
-        self.sanitize(numIn, numHid, numOut, funcs, weights)
-        self.initNeurons(numIn, numHid, numOut, funcs, weights)
+        self.sanitize(num_in, num_hid, num_out, funcs, weights)
+        self.init_neurons(num_in, num_hid, num_out, funcs, weights)
 
-    def feedForward(self, expected):
+    def feedforward(self, expected):
         """
         feedForward algorithm
         
@@ -55,7 +55,7 @@ class MLP(object):
         
         return error
     
-    def feedBack(self, error):
+    def feedback(self, error):
         """
         Backpropagation algorithm
         
@@ -89,12 +89,12 @@ class MLP(object):
         for neuron in self.inputs[1:]:
             neuron.value = example["q"]
         
-        error = self.feedForward(example["pq"])
-        self.feedBack(error)
+        error = self.feedforward(example["pq"])
+        self.feedback(error)
         self.learning()
-        self.errors.append(round(error,4))
+        self.errors.append(round(error, 4))
 
-    def getMSE(self):
+    def get_mse(self):
         """
         Mean Square Error
         
@@ -107,94 +107,94 @@ class MLP(object):
         
         self.mse = mse
 
-    def getOptimalWeights(self):
+    def get_optimal_weights(self):
         weights = []
         for neuron in self.hidden:
             for syn in neuron.synapses:
                 if syn.start == neuron:
-                   weights.append(syn.weight) 
+                    weights.append(syn.weight)
         
         for neuron in self.inputs:
             for syn in neuron.synapses:
                 if syn.start == neuron:
-                   weights.append(syn.weight) 
+                    weights.append(syn.weight)
                    
         return weights
 
-    def initNeurons(self, numIn, numHid, numOut, funcs, weights):            
+    def init_neurons(self, num_in, num_hid, num_out, funcs, weights):
         # Threshold neurons
         neuron = Neuron('0', '1', 1.0)
         self.inputs.append(neuron)
         neuron = Neuron('0', '2', 1.0)
         self.hidden.append(neuron)
         
-        for n in range(numIn):
-            id = str(n+1)
-            neuron = Neuron(id, '1')
+        for n in range(num_in):
+            idn = str(n+1)
+            neuron = Neuron(idn, '1')
             
             self.inputs.append(neuron)
         
-        for n in range(numHid):
-            id = str(n+1)
-            neuron = Neuron(id, '2', function=funcs[0])
+        for n in range(num_hid):
+            idn = str(n+1)
+            neuron = Neuron(idn, '2', func=funcs[0])
             
             self.hidden.append(neuron) 
 
-        for n in range(numOut):
-            id = str(n+1)
-            neuron = Neuron(id, '3', function=funcs[1])
+        for n in range(num_out):
+            idn = str(n+1)
+            neuron = Neuron(idn, '3', func=funcs[1])
             
             self.outputs.append(neuron)
             
         if weights:
-            self.initSynapses(weights)
+            self.init_synapses(weights)
         else:
-            self.initSynapses(self.initialWeights())
+            self.init_synapses(self.initial_weights())
 
-    def initSynapses(self, weights):
+    def init_synapses(self, weights):
         index = 0
-        numIn = len(self.inputs)
-        numHid = len(self.hidden)
-        numOut = len(self.outputs)
+        num_in = len(self.inputs)
+        num_hid = len(self.hidden)
+        num_out = len(self.outputs)
         
-        for i in range(numIn):
-            for j in range(1, numHid):
+        for i in range(num_in):
+            for j in range(1, num_hid):
                 syn = Synapse(self.inputs[i], self.hidden[j], weights[index])
                 self.inputs[i].synapses.append(syn)
                 self.hidden[j].synapses.append(syn)
                 index += 1
                 
-        for i in range(numHid):
-            for j in range(numOut):
+        for i in range(num_hid):
+            for j in range(num_out):
                 syn = Synapse(self.hidden[i], self.outputs[j], weights[index])
                 self.hidden[i].synapses.append(syn)
                 self.outputs[j].synapses.append(syn)
                 index += 1
 
-    def initialWeights(self):
-        numIn = len(self.inputs)
-        numHid = len(self.hidden)
-        numOut = len(self.outputs)
-        numWgt = (numIn * (numHid - 1)) + (numHid * numOut)
+    def initial_weights(self):
+        num_in = len(self.inputs)
+        num_hid = len(self.hidden)
+        num_out = len(self.outputs)
+        num_wgt = (num_in * (num_hid - 1)) + (num_hid * num_out)
         
         weights = []
-        for i in range(numWgt):
-            weights.append(round(random.uniform(-1,1), 2))
+        for i in range(num_wgt):
+            weights.append(round(random.uniform(-1, 1), 2))
             
         return weights
 
-    def sanitize(self, numIn, numHid, numOut, funcs, weights):
-        numWgt = ((numIn+1) * numHid) + ((numHid+1) * numOut)
+    def sanitize(self, num_in, num_hid, num_out, funcs, weights):
+        num_wgt = ((num_in + 1) * num_hid) + ((num_hid + 1) * num_out)
         
-        if numIn < 1:
+        if num_in < 1:
             raise Exception("Invalid number of input neurons")
-        elif numHid < 1:
+        elif num_hid < 1:
             raise Exception("Invalid number of hidden layer neurons")
-        elif numOut < 1:
+        elif num_out < 1:
             raise Exception("Invalid number of output neurons")
         elif len(funcs) != 2:
             raise Exception("Invalid number of activation functions")
-        elif (weights is not None) and len(weights) != numWgt:
+        elif (weights is not None) and len(weights) != num_wgt:
             raise Exception("Invalid number of weights")
         
     def __repr__(self):

@@ -9,7 +9,7 @@ class Synapse(object):
         self.end = end
         self.weight = weight
 
-    def tostring(self, neuron):
+    def to_string(self, neuron):
         direction = "OUT" if self.start == neuron else "IN"
         string = ""
         string += "\n         + "+direction+" | W"

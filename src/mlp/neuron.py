@@ -6,12 +6,12 @@ import numpy as np
 
 class Neuron(object):
     
-    def __init__(self, id, layer, value=0.0, function="N/A", synapses = []):
-        self.id = id
+    def __init__(self, idn, layer, value=0.0, func="N/A"):
+        self.id = idn
         self.layer = layer
         self.synapses = []
         self.value = value
-        self.function = function
+        self.function = func
         self.net = None
         self.sensibility = None
     
@@ -30,7 +30,7 @@ class Neuron(object):
                 self.sensibility = error
             
             if self.function == "Sigmoid":
-                self.sensibility = self.sigmoidDeriv() * error
+                self.sensibility = self.sigmoid_deriv() * error
             
             return
         
@@ -43,7 +43,7 @@ class Neuron(object):
             self.sensibility = sensibility
         
         if self.function == "Sigmoid":
-            self.sensibility = self.sigmoidDeriv() * sensibility
+            self.sensibility = self.sigmoid_deriv() * sensibility
             
     def linear(self):
         y = self.net
@@ -53,7 +53,7 @@ class Neuron(object):
         y = 1 / (1 + np.exp(-self.net))
         return y
     
-    def sigmoidDeriv(self):
+    def sigmoid_deriv(self):
         y = self.value
         dy = y * (1 - y)
         return dy
@@ -66,6 +66,6 @@ class Neuron(object):
         string += "\n      | function: "+self.function
         string += "\n      + Synapses"
         for s in self.synapses:
-            string += s.tostring(self)
+            string += s.to_string(self)
         
         return string
