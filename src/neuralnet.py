@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from src.mlp.mlp import MLP
+import sys
 import matplotlib.pyplot as plt
+if getattr(sys, 'ps1', sys.flags.interactive):
+    from mlp.mlp import MLP
+else:
+    from src.mlp.mlp import MLP
 
 training = [
         {'q': 2.5, 'pq': 0.18},
