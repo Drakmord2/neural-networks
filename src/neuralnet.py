@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import matplotlib.pyplot as plt
 if getattr(sys, 'ps1', sys.flags.interactive):
     from mlp.mlp import MLP
+    from visualization.visualization import Visualization
 else:
     from src.mlp.mlp import MLP
+    from src.visualization.visualization import Visualization
 
 training = [
         {'q': 2.5, 'pq': 0.18},
@@ -17,19 +18,19 @@ training = [
         {'q': 4.0, 'pq': 0.88},
         {'q': 2.0, 'pq': 0.08}
         ]
-crossValidation = []
+cross_validation = []
 test = []
 
 if __name__ == "__main__":
-    layerFunction = ("Sigmoid", "Sigmoid")
-    numIn = 1
-    numHid = 2
-    numOut = 1
+    layer_function = ("Sigmoid", "Sigmoid")
+    num_in = 1
+    num_hid = 2
+    num_out = 1
     alpha = 0.7
     weights = [0.1, -0.7, -0.3, 0.4, -0.6, 0.1, -0.8]
     
     try:
-        network = MLP(alpha, numIn, numHid, numOut, layerFunction, weights)
+        network = MLP(alpha, num_in, num_hid, num_out, layer_function, weights)
         mses = []
         cycles = 15
         
@@ -43,10 +44,10 @@ if __name__ == "__main__":
         print(network)
         print("  - "+str(cycles)+" Cycles")
         print("  - "+str(len(training))+" Examples")
-        print("-----------------------------------------------------")
+        print("-------------------------------------------------------")
         
-        plt.title("Learning Curve")
-        plt.plot(mses)
-        plt.show()
+        vz = Visualization()
+        vz.learning_curve(mses)
+        vz.network(network)
     except Exception as err:
         print("\n------\nError: {0}\n------".format(err))

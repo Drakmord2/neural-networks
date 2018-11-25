@@ -102,7 +102,7 @@ class MLP(object):
         """
         mse = 0
         for error in self.errors:
-            mse += error**2
+            mse += error ** 2
         mse = mse / len(self.errors)
         
         self.mse = mse
@@ -199,7 +199,7 @@ class MLP(object):
         
     def __repr__(self):
         string = "\n- Multi-Layer Perceptron -"
-        string += "\n-----------------------------------------------------"
+        string += "\n-------------------------------------------------------"
         
         string += "\n\n  - Input"
         string += "\n    | Neurons"
@@ -214,7 +214,7 @@ class MLP(object):
         for n in self.outputs:
             string += repr(n)
             
-        string += "\n\n-----------------------------------------------------"
+        string += "\n\n-------------------------------------------------------"
         string += "\n  - Alpha: "+str(self.alpha)
         string += "\n  - MSE: "+str(self.mse)
         
