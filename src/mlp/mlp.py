@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from neuron import Neuron
-from synapse import Synapse
+from .neuron import Neuron
+from .synapse import Synapse
 import random
 
  

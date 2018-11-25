@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from mlp import MLP
+from src.mlp.mlp import MLP
 import matplotlib.pyplot as plt
 
 training = [
