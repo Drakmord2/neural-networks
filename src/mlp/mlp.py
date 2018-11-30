@@ -276,7 +276,8 @@ class MLP(object):
             string += repr(n)
             
         string += "\n\n-------------------------------------------------------"
-        string += "\n  - Alpha: "+str(self.alpha)
+        string += "\n  - Output: "+str(self.outputs[0].value)
         string += "\n  - MSE: "+str(self.mse)
+        string += "\n  - Alpha: "+str(self.alpha)
         
         return string

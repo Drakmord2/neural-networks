@@ -57,7 +57,10 @@ if __name__ == "__main__":
         print("-------------------------------------------------------")
         
         vz = Visualization()
+        print("\n- Statistics -")
         vz.learning_curve(mses)
+        print("\n- Architecture -")
         vz.network(network)
+        print("\n===========================================================\n")
     except Exception as err:
         print("\n------\nError: {0}\n------".format(err))
