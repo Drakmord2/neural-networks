@@ -19,7 +19,7 @@ class Visualization(object):
         pos = self.get_position(network)
         
         plt.figure(1, figsize=(5.1,3))
-        nx.draw(G, pos, node_color = values, node_size = 400, vmin=0, vmax=4)
+        nx.draw(G, pos, node_color = values, node_size = 400, vmin=0, vmax=len(network.hidden)+2)
         nx.draw_networkx_edge_labels(G, pos, edge_labels=weights, label_pos=0.7)
         nx.draw_networkx_edges(G, pos, edgelist=G.edges(), arrows=True)
 
