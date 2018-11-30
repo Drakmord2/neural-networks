@@ -28,7 +28,7 @@ class Visualization(object):
         
     def learning_curve(self, mses):
         plt.title("Learning Curve")
-        plt.ylabel("Mean Square Error")
+        plt.ylabel("Mean Squared Error")
         plt.xlabel("Cycles")
         plt.plot(mses)
         plt.show()
@@ -38,7 +38,12 @@ class Visualization(object):
         weights = {}
         edges = []
         
-        for node in network.inputs+network.hidden+network.outputs:
+        hidden_nodes = []
+        for nodes in network.hidden:
+            for node in nodes:
+                hidden_nodes.append(node) 
+        
+        for node in network.inputs+hidden_nodes+network.outputs:
             id_node = node.id+node.layer
             val_map[id_node] = int(node.layer)
             for dest in node.synapses:
@@ -53,7 +58,7 @@ class Visualization(object):
     def get_position(self, network):
         pos = {}
         num_in = len(network.inputs)
-        num_hid = len(network.hidden)
+        num_hid_lyr = len(network.hidden)
         num_out = len(network.outputs)
         
         curr_x = 0
@@ -64,12 +69,13 @@ class Visualization(object):
             curr_y -= 2
         curr_x += 2
         
-        curr_y = num_hid
-        for i in range(num_hid):
-            id_node = network.hidden[i].id+network.hidden[i].layer
-            pos[id_node] = [curr_x, curr_y]
-            curr_y -= 2
-        curr_x += 2
+        for layer in range(num_hid_lyr):
+            curr_y = len(network.hidden[layer])
+            for i in range(len(network.hidden[layer])):
+                id_node = network.hidden[layer][i].id+network.hidden[layer][i].layer
+                pos[id_node] = [curr_x, curr_y]
+                curr_y -= 2
+            curr_x += 2
         
         curr_y = num_out
         for i in range(num_out):

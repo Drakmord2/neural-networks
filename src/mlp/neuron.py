@@ -24,7 +24,7 @@ class Neuron(object):
             self.value = self.sigmoid()
             return self.value
         
-    def backpropagate(self, error=None):
+    def backpropagate(self, error=None, layers=3):
         if error:
             if self.function == "Linear":
                 self.sensibility = error
@@ -36,7 +36,7 @@ class Neuron(object):
         
         sensibility = 0
         for syn in self.synapses:
-            if syn.end.layer == '3':
+            if syn.end.layer == str(layers):
                 sensibility += syn.end.sensibility * syn.weight
         
         if self.function == "Linear":
