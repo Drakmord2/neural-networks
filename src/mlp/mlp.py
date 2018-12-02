@@ -10,13 +10,13 @@ class MLP(object):
     """
     Multi-Layer Perceptron
     
-    Parameters: alpha=Learning constant; numIn=Neurons on input layer;
-                numHid=Neurons on hidden layer; numOut=Neurons on output layer;
+    Parameters: alpha=Learning rate; numIn=Neurons on input layer;
+                layers=Neurons of each hidden layer; numOut=Neurons on output layer;
                 funcs=Tuple with activation function of each layer;
                 weights=List with all synaptic weights;
     """
     
-    def __init__(self, alpha, num_in, num_hid, num_out, funcs, weights):
+    def __init__(self, alpha, num_in, layers, num_out, funcs, weights):
         """
         Build a network
         """
@@ -27,34 +27,44 @@ class MLP(object):
         self.errors = []
         self.mse = -1.0
         
-        self.sanitize(num_in, num_hid, num_out, funcs, weights)
-        self.init_neurons(num_in, num_hid, num_out, funcs, weights)
+        self.sanitize(num_in, layers, num_out, funcs, weights)
+        self.init_neurons(num_in, layers, num_out, funcs, weights)
 
-    def train(self, example):
-        """
-        Network training
-        """
-        for neuron in self.inputs[1:]:
-            neuron.value = example["q"]
-        
-        error = self.feedforward(example["pq"])
-        self.feedback(error)
-        self.learning()
-        self.errors.append(round(error, 4))
-        
-    def compute(inputs):
+    def compute(self, inputs):
         """
         Given a set of inputs, Classify or Predict
         """
-        pass
+        self.get_inputs(inputs)
+        self.feedforward()
         
-    def feedforward(self, expected):
+        result = []
+        for out in self.outputs:
+            result.append(out.value)
+        
+        return result
+
+    def train(self, example, outputs):
+        """
+        Network training
+        """
+        if (len(self.inputs)-1 != len(example)-outputs):
+            raise Exception("Invalid input data format")
+            
+        self.get_inputs(example)
+            
+        expected = example.iloc[len(example)-outputs:]
+        
+        error = self.feedforward(expected)
+        self.feedback(error)
+        self.learning()
+        self.errors += error
+        
+    def feedforward(self, expected=None):
         """
         feedForward algorithm
         
-        Parameters: expected=expected output value
+        Parameters: expected=expected output values
         """
-        error = 0
         
         for layer in range(len(self.hidden)):
             for neuron in self.hidden[layer][1:]:    
@@ -64,7 +74,9 @@ class MLP(object):
                         net += syn.start.value * syn.weight
                 neuron.net = net
                 neuron.evaluate()
-            
+        
+        error = []
+        n = 0
         for neuron in self.outputs:
             net = 0
             for syn in neuron.synapses:
@@ -73,7 +85,9 @@ class MLP(object):
             neuron.net = net
             neuron.evaluate()
             
-            error = expected - neuron.value #TODO Generalize
+            if expected is not None:
+                error.append(expected[n] - neuron.value)
+            n += 1
         
         return error
     
@@ -83,29 +97,36 @@ class MLP(object):
         
         Parameters: error=expect output minus derived output
         """
+        n = 0
         for neuron in self.outputs:
-            neuron.backpropagate(error)
+            neuron.backpropagate(error[n])
+            n += 1
         
-        for layer in range(len(self.hidden)):
+        for layer in range(len(self.hidden)-1, -1, -1):
             for neuron in self.hidden[layer][1:]: 
-                neuron.backpropagate(layers=len(self.hidden)+2)
+                neuron.backpropagate()
     
     def learning(self):
         """
         Learning algorithm
         
-        W(new) = W(old) + alpha + sensibility + f(net)
+        W(new) = W(old) + alpha * sensitivity * f(net)
         """
         for layer in range(len(self.hidden)):
             for neuron in self.hidden[layer]:
                 for syn in neuron.synapses:
                     if syn.start == neuron:
-                        syn.weight = syn.weight + (self.alpha * syn.end.sensibility * neuron.value) 
+                        syn.weight = syn.weight + (self.alpha * syn.end.sensitivity * neuron.value) 
                         
         for neuron in self.inputs:
             for syn in neuron.synapses:
                 if syn.start == neuron:
-                    syn.weight = syn.weight + (self.alpha * syn.end.sensibility * neuron.value)        
+                    syn.weight = syn.weight + (self.alpha * syn.end.sensitivity * neuron.value)        
+
+    def get_inputs(self, data):
+        for i in range(1, len(self.inputs)):
+            neuron = self.inputs[i]
+            neuron.value = data.iloc[i-1]
 
     def get_mse(self):
         """
@@ -119,27 +140,31 @@ class MLP(object):
         mse = mse / len(self.errors)
         
         self.mse = mse
+        
+        return mse
 
     def get_optimal_weights(self):
         weights = []
-        for neuron in self.hidden:
-            for syn in neuron.synapses:
-                if syn.start == neuron:
-                    weights.append(syn.weight)
         
         for neuron in self.inputs:
             for syn in neuron.synapses:
                 if syn.start == neuron:
                     weights.append(syn.weight)
-                   
+                    
+        for layer in self.hidden:
+            for neuron in layer:
+                for syn in neuron.synapses:
+                    if syn.start == neuron:
+                        weights.append(syn.weight)
+        
         return weights
 
-    def init_neurons(self, num_in, num_hid, num_out, funcs, weights):
+    def init_neurons(self, num_in, layers, num_out, funcs, weights):
         # Threshold neurons
         neuron = Neuron('0', '1', 1.0)
         self.inputs.append(neuron)
         
-        for n in range(0, len(num_hid)):
+        for n in range(len(layers)):
             neuron = Neuron('0', str(n+2), 1.0)
             self.hidden.append([neuron])
         
@@ -150,9 +175,9 @@ class MLP(object):
             
             self.inputs.append(neuron)
         
-        for l in range(0, len(num_hid)):
+        for l in range(len(layers)):
             neurons = []
-            for n in range(num_hid[l]):
+            for n in range(layers[l]):
                 idn = str(n+1)
                 neuron = Neuron(idn, str(l+2), func=funcs[l])
                 neurons.append(neuron)
@@ -161,7 +186,7 @@ class MLP(object):
 
         for n in range(num_out):
             idn = str(n+1)
-            neuron = Neuron(idn, str(len(num_hid)+2), func=funcs[len(num_hid)])
+            neuron = Neuron(idn, str(len(layers)+2), func=funcs[len(layers)])
             
             self.outputs.append(neuron)
             
@@ -177,9 +202,9 @@ class MLP(object):
         hid_layers = self.hidden
         num_out = len(self.outputs)
         
-        for i in range(0, len(hid_layers)):
+        for i in range(len(hid_layers)):
             num_hid = len(hid_layers[i])
-            
+                
             if i == 0:
                 for j in range(num_in):
                     for k in range(1, num_hid):
@@ -187,6 +212,14 @@ class MLP(object):
                         self.inputs[j].synapses.append(syn)
                         self.hidden[i][k].synapses.append(syn)
                         index += 1
+                        
+                if len(hid_layers) == 1:
+                    for j in range(num_hid):
+                        for k in range(num_out):
+                            syn = Synapse(self.hidden[i][j], self.outputs[k], weights[index])
+                            self.hidden[i][j].synapses.append(syn)
+                            self.outputs[k].synapses.append(syn)
+                            index += 1
                 continue
             
             for j in range(len(hid_layers[i-1])):
@@ -207,19 +240,19 @@ class MLP(object):
 
     def initial_weights(self):
         num_in = len(self.inputs)
-        num_hid = self.hidden
+        layers = self.hidden
         num_out = len(self.outputs)
         
         num_wgt = 0
-        for i in range(0, len(num_hid)):
+        for i in range(len(layers)):
             if i == 0:
-                num_wgt += (num_in + 1) * num_hid[0]
+                num_wgt += (num_in + 1) * len(layers[0])
                 continue
                 
-            num_wgt += (num_hid[i-1] + 1) * num_hid[i]
+            num_wgt += (len(layers[i-1]) + 1) * len(layers[i])
             
-            if i == len(num_hid) - 1:
-                num_wgt += (num_hid[i] + 1) * num_out
+            if i == len(layers) - 1:
+                num_wgt += (len(layers[i]) + 1) * num_out
                 break
         
         weights = []
@@ -228,30 +261,33 @@ class MLP(object):
             
         return weights
 
-    def sanitize(self, num_in, num_hid, num_out, funcs, weights):
-        if len(num_hid) < 1:
-            raise Exception("Invalid number of hidden layer neurons")
-            
+    def sanitize(self, num_in, layers, num_out, funcs, weights):
+        if len(layers) < 1:
+            raise Exception("Invalid number of hidden layer neurons. Must be at least one.")
+        
         num_wgt = 0
-        for i in range(0, len(num_hid)):
+        for i in range(len(layers)):                
             if i == 0:
-                num_wgt += (num_in + 1) * num_hid[0]
+                num_wgt += (num_in + 1) * layers[0]
+                
+                if len(layers) == 1:
+                    num_wgt += (layers[i] + 1) * num_out
                 continue
                 
-            num_wgt += (num_hid[i-1] + 1) * num_hid[i]
+            num_wgt += (layers[i-1] + 1) * layers[i]
             
-            if i == len(num_hid) - 1:
-                num_wgt += (num_hid[i] + 1) * num_out
+            if i == len(layers) - 1:
+                num_wgt += (layers[i] + 1) * num_out
                 break
             
         if num_in < 1:
-            raise Exception("Invalid number of input neurons")
+            raise Exception("Invalid number of input neurons. Must be at least one.")
         elif num_out < 1:
-            raise Exception("Invalid number of output neurons")
-        elif len(funcs) != len(num_hid)+1:
-            raise Exception("Invalid number of activation functions")
+            raise Exception("Invalid number of output neurons. Must be at least one.")
+        elif len(funcs) != len(layers)+1:
+            raise Exception("Invalid number of activation functions. Expected: {} but got: {}".format(len(funcs), len(layers)+1))
         elif (weights is not None) and len(weights) != num_wgt:
-            raise Exception("Invalid number of weights")
+            raise Exception("Invalid number of weights. Expected: {} but got: {}".format(num_wgt, len(weights)))
         
     def __repr__(self):
         string = "\n- Multi-Layer Perceptron -"
@@ -276,8 +312,6 @@ class MLP(object):
             string += repr(n)
             
         string += "\n\n-------------------------------------------------------"
-        string += "\n  - Output: "+str(self.outputs[0].value)
-        string += "\n  - MSE: "+str(self.mse)
         string += "\n  - Alpha: "+str(self.alpha)
         
         return string

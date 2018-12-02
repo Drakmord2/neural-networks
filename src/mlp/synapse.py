@@ -5,9 +5,9 @@
 class Synapse(object):
     
     def __init__(self, start, end, weight):
-        self.start = start
-        self.end = end
-        self.weight = weight
+        self.start = start      # Neuron
+        self.end = end          # Neuron
+        self.weight = weight    # Float
 
     def to_string(self, neuron):
         direction = "OUT" if self.start == neuron else "IN"
