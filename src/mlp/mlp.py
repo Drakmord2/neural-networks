@@ -16,7 +16,7 @@ class MLP(object):
                 weights=List with all synaptic weights;
     """
     
-    def __init__(self, alpha, num_in, layers, num_out, funcs, weights):
+    def __init__(self, alpha, num_in, layers, num_out, funcs, weights, loss_func):
         """
         Build a network
         """
@@ -25,7 +25,8 @@ class MLP(object):
         self.hidden = []
         self.outputs = []
         self.errors = []
-        self.mse = -1.0
+        self.loss_func = loss_func
+        self.loss = -1.0
         
         self.sanitize(num_in, layers, num_out, funcs, weights)
         self.init_neurons(num_in, layers, num_out, funcs, weights)
@@ -128,6 +129,13 @@ class MLP(object):
             neuron = self.inputs[i]
             neuron.value = data.iloc[i-1]
 
+    def get_loss(self):
+        if self.loss_func == 'MSE':
+            return self.get_mse()
+        
+        if self.loss_func == 'CE':
+            return self.get_ce()
+        
     def get_mse(self):
         """
         Mean Square Error
@@ -139,9 +147,23 @@ class MLP(object):
             mse += error ** 2
         mse = mse / len(self.errors)
         
-        self.mse = mse
+        self.loss = mse
         
         return mse
+    
+    def get_ce(self):
+        """
+        Cross Entropy
+        
+        CE = 
+        """
+        ce = 0
+        for error in self.errors:
+            ce += 0
+        
+        self.loss = ce
+        
+        return ce
 
     def get_optimal_weights(self):
         weights = []
@@ -161,21 +183,20 @@ class MLP(object):
 
     def init_neurons(self, num_in, layers, num_out, funcs, weights):
         # Threshold neurons
-        neuron = Neuron('0', '1', 1.0)
+        neuron = Neuron('0', '1', 1.0) #Input
         self.inputs.append(neuron)
-        
-        for n in range(len(layers)):
+        for n in range(len(layers)): #Hidden layers
             neuron = Neuron('0', str(n+2), 1.0)
             self.hidden.append([neuron])
         
         # Neurons
-        for n in range(num_in):
+        for n in range(num_in): #Input
             idn = str(n+1)
             neuron = Neuron(idn, '1')
             
             self.inputs.append(neuron)
         
-        for l in range(len(layers)):
+        for l in range(len(layers)): #Hidden layers
             neurons = []
             for n in range(layers[l]):
                 idn = str(n+1)
@@ -184,7 +205,7 @@ class MLP(object):
                 
             self.hidden[l] += neurons
 
-        for n in range(num_out):
+        for n in range(num_out): #Output
             idn = str(n+1)
             neuron = Neuron(idn, str(len(layers)+2), func=funcs[len(layers)])
             
@@ -285,7 +306,7 @@ class MLP(object):
         elif num_out < 1:
             raise Exception("Invalid number of output neurons. Must be at least one.")
         elif len(funcs) != len(layers)+1:
-            raise Exception("Invalid number of activation functions. Expected: {} but got: {}".format(len(funcs), len(layers)+1))
+            raise Exception("Invalid number of activation functions. Expected: {} but got: {}".format(len(layers)+1, len(funcs)))
         elif (weights is not None) and len(weights) != num_wgt:
             raise Exception("Invalid number of weights. Expected: {} but got: {}".format(num_wgt, len(weights)))
         

@@ -9,7 +9,7 @@ class Visualization(object):
     def __init__(self):
         pass
     
-    def network(self, network):
+    def network(self, network, labels=False):
         G = nx.DiGraph()
         
         edges, val_map, weights = self.get_edges(network)
@@ -20,17 +20,19 @@ class Visualization(object):
         
         plt.figure(1, figsize=(5.1,3))
         nx.draw(G, pos, node_color = values, node_size = 400, vmin=0, vmax=len(network.hidden)+2)
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=weights, label_pos=0.7)
         nx.draw_networkx_edges(G, pos, edgelist=G.edges(), arrows=True)
-
+        if labels:
+            nx.draw_networkx_edge_labels(G, pos, edge_labels=weights, label_pos=0.7)
+            
         plt.title("Multi-layer Perceptron", fontweight="bold")
         plt.show()
         
-    def learning_curve(self, mses):
-        plt.title("Learning Curve")
+    def learning_curve(self, mses, cverr):
         plt.ylabel("Mean Squared Error")
         plt.xlabel("Cycles")
-        plt.plot(mses)
+        plt.plot(mses, label='Learning curve')
+        plt.plot(cverr, label='Cross-validation')
+        plt.legend()
         plt.show()
 
     def get_edges(self, network):

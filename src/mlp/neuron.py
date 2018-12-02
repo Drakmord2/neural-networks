@@ -22,6 +22,10 @@ class Neuron(object):
         """
         Calculate output
         """
+        if self.function == "Step":
+            self.value = self.step()
+            return self.value
+        
         if self.function == "Linear":
             self.value = self.linear()
             return self.value
@@ -35,6 +39,9 @@ class Neuron(object):
         Calculate sensitivity
         """
         if error:
+            if self.function == "Step": #TODO Define step function behavior
+                self.sensitivity = error
+                
             if self.function == "Linear":
                 self.sensitivity = error
             

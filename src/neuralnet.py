@@ -12,24 +12,39 @@ else:
     from src.visualization.visualization import Visualization
     from src.openai.openai import OpenAI
 
-def getData(path=None):
+
+# =============================================================================
+# Globals
+# =============================================================================
+
+CV_THRESH = 250
+MAX_CYCLES = 2000
+
+# =============================================================================
+# Auxiliary Functions
+# =============================================================================
+    
+def getCSVData(path=None, sep=',', decimal='.'):
     """
         Fetches data from a CSV file.
         
         Format: Inputs followed by outputs
     """
-    data = pd.read_csv(path)
+    data = pd.read_csv(path, sep=sep, decimal=decimal)
     data = data.sample(frac=1)
     
-    size = round(len(data)*0.8)
-    
+    size = round(len(data)*0.7)
     training = data[:size]
-    cross_validation = []
+    
+    data = data[size:]
+    size = round(len(data)*0.66)
+    
+    cross_validation = data[:size]
     test = data[size:]
     
     return training, cross_validation, test
 
-def show_result(network, cycles=None, training=None, mses=None, output=None):
+def show_result(network, cycles=None, training=None, mses=None, cverr=None, output=None):
     print(network)
     
     if output:
@@ -39,55 +54,100 @@ def show_result(network, cycles=None, training=None, mses=None, output=None):
         print("  - "+str(cycles)+" Cycles")
         
     if training is not None:
-        print("  - "+str(len(training))+" Examples")
+        print("  - "+str(len(training))+" Training Examples")
     print("-------------------------------------------------------")
     
     vz = Visualization()
     
     if mses:
         print("\n- Statistics -")
-        vz.learning_curve(mses)
+        vz.learning_curve(mses, cverr)
         
     print("\n- Architecture -")
     vz.network(network)
     print("\n=========================================================\n")
     print("Optimal Weights: ", network.get_optimal_weights())
 
-def setup():
+def setup(num_in, num_out, binary=False):
     layer_function = [
-        "Sigmoid", "Sigmoid",
+        "Sigmoid",
         "Sigmoid"
         ]                           # Activation Function of each layer
-    num_in = 1                      # Number of input layer neurons
-    num_hid = [2, 3]                # Number of neurons in each hidden layer
-    num_out = 1                     # Number of output layer neurons
-                                    # * Threshold neurons added automatically *
-    alpha = 0.82                    # Learning rate
+    num_in = num_in                 # Number of input layer neurons
+    num_hid = [2]                   # Number of neurons in each hidden layer
+    num_out = num_out               # Number of output layer neurons
+    alpha = 0.05                    # Learning rate
     weights = [                     # Synaptic weights 
             0.3, -0.7, 0.4, 0.5,
-            -0.6, 0.2 ,0.1, -0.3, -0.8, 0.9, 0.8, 0.6, 0.5,
-            0.3, -0.5, 0.1, -0.6
+            0.3, -0.5, 0.1
             ] 
+    weights = None
+    loss_function = "CE" if binary else "MSE"
     
-    network = MLP(alpha, num_in, num_hid, num_out, layer_function, weights)
+    network = MLP(alpha, num_in, num_hid, num_out, layer_function, weights, loss_function)
 
     return network
 
-def training(network, data):
-    outputs = 1
+def training(network, training, validation, num_in=1, num_out=1):
     mses = []
-    cycles = 2500
+    cvmse = []
+    cycles = 0
     
-    for cycle in range(cycles):
+    while True:
         network.errors = []
     
-        for _, example in data.iterrows():
-            network.train(example, outputs)
+        for _, example in training.iterrows():
+            network.train(example, num_out)
             
-        mses.append(network.get_mse())
-    
-    return mses, cycles
+        mse = network.get_loss()
+        mses.append(mse)
+        
+        cvmse, cverr = cross_validation(network, validation, cvmse, num_in)
+        
+        if cycles > CV_THRESH:
+            if mse < mses[cycles-1] and cverr >= cvmse[cycles-1] and cverr >= mse:
+                break
+        
+        cycles += 1
+        
+        if cycles >= MAX_CYCLES:
+            break
+        
+    return mses, cvmse, cycles
 
+def cross_validation(network, validation, cvmse, num_in=1):
+    err = []
+    for _, example in validation.iterrows():
+        result = network.compute(example)
+        err.append(example[num_in] - result)
+    
+    cverr = 0
+    for error in err:
+        cverr += error ** 2
+    cverr = cverr / len(err)
+    cvmse.append(cverr)
+    
+    return cvmse, cverr
+
+def compute(network, data, num_in=1, num_out=1):
+    inputs = data.iloc[:,:-num_out]
+    output = data.iloc[:,-num_out:]
+    print("\n- Tests\n")
+    
+    err = []
+    i = 0
+    for idx, row in inputs.iterrows():
+        result = network.compute(row)
+        print("  - Result: {} | Expected: {}".format(result[0], output.iloc[i][0]))
+        err.append(result[0] - output.iloc[i][0])
+        i += 1
+        
+    mse = 0
+    for error in err:
+        mse += error ** 2
+    mse = mse / len(err)
+    print("  - {}: {}".format(network.loss_func, mse))
+    
 def setup_openai():
     oai = OpenAI()
     oai.hotterColder()
@@ -98,24 +158,25 @@ def setup_openai():
 # =============================================================================
 
 if __name__ == "__main__":
-    data_path = "data/data1.csv"
-    training_data,_,test_data = getData(data_path)
-    
     try:
-        network = setup()
+        # Data import
+        data_path = "data/data1.csv"
+        training_data, validation_data, test_data = getCSVData(data_path, sep=',', decimal='.')
+        
+        # Data structure
+        num_in = 1
+        num_out = 1
+        binary_output = False
+        
+        # Network setup
+        network = setup(num_in, num_out, binary_output)
 
         # Training
-        mses, cycles = training(network, training_data)
-        show_result(network, cycles, training_data, mses)
+        mses, cverr, cycles = training(network, training_data, validation_data, num_in, num_out)
+        show_result(network, cycles, training_data, mses, cverr)
         
         # Computing
-        inputs = list(test_data.iterrows())
-        print("\n- Tests\n")
-        for i in range(len(inputs)):
-            inp = inputs[i][1]
-            
-            result = network.compute(inp)
-            print("  - Result: {} | Expected: {}".format(result, inp[1]))
+        compute(network, test_data, num_in, num_out)
         
     except Exception as err:
         print("\n------\nError: {0}\n------".format(err))
