@@ -39,9 +39,6 @@ class Neuron(object):
         Calculate sensitivity
         """
         if error:
-            if self.function == "Step": #TODO Define step function behavior
-                self.sensitivity = error
-                
             if self.function == "Linear":
                 self.sensitivity = error
             
@@ -65,7 +62,7 @@ class Neuron(object):
             self.sensitivity = self.sigmoid_deriv() * sensitivity
       
     def step(self):
-        if self.net > 0:
+        if float(self.net) > 0:
             return 1
         
         return 0

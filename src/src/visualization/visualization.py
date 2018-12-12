@@ -10,6 +10,13 @@ class Visualization(object):
         pass
     
     def network(self, network, labels=False):
+        color_max = 2
+        title = "Perceptron"
+        
+        if network.type == "MLP":
+            color_max = len(network.hidden)+2
+            title = "Multi-layer Perceptron"
+            
         G = nx.DiGraph()
         
         edges, val_map, weights = self.get_edges(network)
@@ -19,16 +26,20 @@ class Visualization(object):
         pos = self.get_position(network)
         
         plt.figure(1, figsize=(5.1,3))
-        nx.draw(G, pos, node_color = values, node_size = 400, vmin=0, vmax=len(network.hidden)+2)
+        nx.draw(G, pos, node_color = values, node_size = 400, vmin=0, vmax=color_max)
         nx.draw_networkx_edges(G, pos, edgelist=G.edges(), arrows=True)
         if labels:
             nx.draw_networkx_edge_labels(G, pos, edge_labels=weights, label_pos=0.7)
             
-        plt.title("Multi-layer Perceptron", fontweight="bold")
+        plt.title(title, fontweight="bold")
         plt.show()
         
-    def learning_curve(self, mses, cverr):
-        plt.ylabel("Mean Squared Error")
+    def learning_curve(self, mses, cverr, loss_func):
+        if loss_func == "MSE":
+            plt.ylabel("Mean Squared Error")
+        if loss_func == "CE":
+            plt.ylabel("Cross Entropy")
+            
         plt.xlabel("Cycles")
         plt.plot(mses, label='Learning curve')
         plt.plot(cverr, label='Cross-validation')
@@ -39,13 +50,16 @@ class Visualization(object):
         val_map = {}
         weights = {}
         edges = []
-        
         hidden_nodes = []
-        for nodes in network.hidden:
-            for node in nodes:
-                hidden_nodes.append(node) 
+        nodes = network.inputs+network.outputs
         
-        for node in network.inputs+hidden_nodes+network.outputs:
+        if network.type == "MLP":
+            for nodes in network.hidden:
+                for node in nodes:
+                    hidden_nodes.append(node) 
+            nodes = network.inputs+hidden_nodes+network.outputs
+        
+        for node in nodes:
             id_node = node.id+node.layer
             val_map[id_node] = int(node.layer)
             for dest in node.synapses:
@@ -60,7 +74,6 @@ class Visualization(object):
     def get_position(self, network):
         pos = {}
         num_in = len(network.inputs)
-        num_hid_lyr = len(network.hidden)
         num_out = len(network.outputs)
         
         curr_x = 0
@@ -71,13 +84,15 @@ class Visualization(object):
             curr_y -= 2
         curr_x += 2
         
-        for layer in range(num_hid_lyr):
-            curr_y = len(network.hidden[layer])
-            for i in range(len(network.hidden[layer])):
-                id_node = network.hidden[layer][i].id+network.hidden[layer][i].layer
-                pos[id_node] = [curr_x, curr_y]
-                curr_y -= 2
-            curr_x += 2
+        if network.type == "MLP":
+            num_hid_lyr = len(network.hidden)
+            for layer in range(num_hid_lyr):
+                curr_y = len(network.hidden[layer])
+                for i in range(len(network.hidden[layer])):
+                    id_node = network.hidden[layer][i].id+network.hidden[layer][i].layer
+                    pos[id_node] = [curr_x, curr_y]
+                    curr_y -= 2
+                curr_x += 2
         
         curr_y = num_out
         for i in range(num_out):

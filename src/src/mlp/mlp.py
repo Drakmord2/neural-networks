@@ -20,6 +20,7 @@ class MLP(object):
         """
         Build a network
         """
+        self.type = "MLP"
         self.alpha = alpha
         self.inputs = []
         self.hidden = []
@@ -75,6 +76,9 @@ class MLP(object):
                         net += syn.start.value * syn.weight
                 neuron.net = net
                 neuron.evaluate()
+                
+        if expected is not None:
+            expected = list(expected)
         
         error = []
         n = 0
@@ -180,6 +184,13 @@ class MLP(object):
                         weights.append(syn.weight)
         
         return weights
+
+    def get_output(self):
+        outputs = []
+        for out in self.outputs:
+            outputs.append(out.value)
+        
+        return outputs
 
     def init_neurons(self, num_in, layers, num_out, funcs, weights):
         # Threshold neurons
